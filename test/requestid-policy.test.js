@@ -4,7 +4,19 @@ const should = chai.should();
 
 describe('requestid-policy', function () {
   it('should add requestid to req and res with the default name', function () {
-    let policy = requestidPolicy.policy({});
+    runTest();
+  });
+
+  it('should add requestid to req and rest with custom name', function () {
+    runTest('x-test-id');
+  });
+
+  function runTest(headerName) {
+    let actionParams = {};
+    if (headerName) {
+      actionParams.headerName = headerName;
+    }
+    let policy = requestidPolicy.policy(actionParams);
 
     let req = {
       headers: {}
@@ -22,8 +34,8 @@ describe('requestid-policy', function () {
 
     policy(req, res, next);
 
-    req.headers.should.have.property('x-gateway-request-id');
-    res.headers.should.have.property('x-gateway-request-id');
+    req.headers.should.have.property(headerName || 'x-gateway-request-id');
+    res.headers.should.have.property(headerName || 'x-gateway-request-id');
     nextCalled.should.be.true;
-  });
+  }
 });
