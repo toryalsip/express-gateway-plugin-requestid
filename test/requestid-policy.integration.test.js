@@ -1,8 +1,7 @@
 // Vslidates that the policy correctly wires up to the express-gateway server and performs
-// the correct actions.  This test requires first running "node test-server/server.js" first
-// before these tests can pass.  This is a task that should be automated, but currently 
-// the implementation of express-gateay doesn't include testing tools.
+// the correct actions.
 
+const child_process = require('child_process');
 const express = require('express');
 const supertest = require('supertest');
 const request = supertest('http://localhost:8080');
@@ -10,9 +9,11 @@ const chai = require('chai');
 const should = chai.should();
 
 let server = undefined;
+let testGw = undefined;
 
 describe('requestid-policy integration', function () {
   before(function (done) {
+    this.timeout(10000);
     const app = express();
     const checkHeader = (req, res) => {
       if (req.headers['x-gateway-request-id']) {
@@ -24,11 +25,15 @@ describe('requestid-policy integration', function () {
 
     app.get('/api/v1/*', checkHeader);
 
-    server = app.listen(8081, done());
+    server = app.listen(8081, function () {
+      testGw = child_process.fork('./test-server/server.js');
+      setTimeout(() => done(), 4000);
+    });
   });
 
   after(function () {
     server.close();
+    testGw.kill();
   })
 
   it('should add request id to the request and response', function () {

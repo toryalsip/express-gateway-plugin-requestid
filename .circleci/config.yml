@@ -20,10 +20,6 @@ jobs:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
 
-      - run:
-          command: node ./test-server/server.js
-          background: true
-
       - run: npm test
 
 
