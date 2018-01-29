@@ -36,6 +36,6 @@ describe('requestid-policy', function () {
 
     req.headers.should.have.property(headerName || 'x-gateway-request-id');
     res.headers.should.have.property(headerName || 'x-gateway-request-id');
-    nextCalled.should.be.true;
+    nextCalled.should.be.false;
   }
 });
