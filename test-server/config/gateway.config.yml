@@ -1,0 +1,24 @@
+http:
+  port: 8080
+admin:
+  port: 9876
+  hostname: localhost
+apiEndpoints:
+  api:
+    host: '*'
+serviceEndpoints:
+  httpbin:
+    url: 'http://localhost:8081'
+policies:
+  - proxy
+  - requestid
+pipelines:
+  - name: basic
+    apiEndpoints:
+      - api
+    policies:
+      - requestid:
+      - proxy:
+          - action:
+              serviceEndpoint: httpbin
+              changeOrigin: true
