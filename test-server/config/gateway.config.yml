@@ -1,14 +1,11 @@
 http:
-  port: 8080
-admin:
-  port: 9876
-  hostname: localhost
+  port: ${TEST_GW_PORT:-8080}
 apiEndpoints:
   api:
     host: '*'
 serviceEndpoints:
   httpbin:
-    url: 'http://localhost:8081'
+    url: 'http://localhost:${TEST_BACKEND_PORT:-8081}'
 policies:
   - proxy
   - requestid

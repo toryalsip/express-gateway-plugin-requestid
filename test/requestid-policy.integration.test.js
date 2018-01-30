@@ -2,33 +2,43 @@
 // the correct actions.
 
 const child_process = require('child_process');
-const express = require('express');
 const supertest = require('supertest');
-const request = supertest('http://localhost:8080');
 const chai = require('chai');
 const should = chai.should();
 
+const findOpenPorts = require('../test-server/find-open-port');
+const getBackendServer = require('../test-server/get-backend-server');
+
 let server = undefined;
 let testGw = undefined;
+let request = undefined;
+
 
 describe('requestid-policy integration', function () {
-  before(function (done) {
+  before(function () {
     this.timeout(10000);
-    const app = express();
-    const checkHeader = (req, res) => {
-      if (req.headers['x-gateway-request-id']) {
-        res.status(200).send('OK');
-      } else {
-        res.status(400).send('Invalid');
-      }
-    };
+    return findOpenPorts(2)
+      .then((ports) => {
+        process.env.TEST_GW_PORT = ports[0];
+        process.env.TEST_BACKEND_PORT = ports[1];
 
-    app.get('/api/v1/*', checkHeader);
+        request = supertest(`http://localhost:${ports[0]}`);
 
-    server = app.listen(8081, function () {
-      testGw = child_process.fork('./test-server/server.js');
-      setTimeout(() => done(), 4000);
-    });
+        const checkHeader = (req, res) => {
+          if (req.headers['x-gateway-request-id']) {
+            res.status(200).send('OK');
+          } else {
+            res.status(400).send('Invalid');
+          }
+        };
+        return getBackendServer(ports[1], checkHeader);
+      }).then((runningApp) => {
+        server = runningApp.app;
+        return new Promise((resolve, reject) => {
+          testGw = child_process.fork('./test-server/server.js');
+          setTimeout(() => resolve(), 4000);
+        });
+      });
   });
 
   after(function () {
