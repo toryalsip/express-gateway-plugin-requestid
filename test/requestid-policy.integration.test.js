@@ -36,7 +36,21 @@ describe('requestid-policy integration', function () {
         server = runningApp.app;
         return new Promise((resolve, reject) => {
           testGw = child_process.fork('./test-server/server.js');
-          setTimeout(() => resolve(), 4000);
+          let count = 0;
+          const interval = setInterval(() => {
+            count++; // Waiting for process to start, ignoring conn refused errors
+            request
+              .get('/not-found')
+              .end((err, res) => {
+                if (res && res.statusCode === 404) {
+                  clearInterval(interval);
+                  resolve();
+                } else if (count >= 25) {
+                  clearInterval(interval);
+                  reject(new Error('Failed to start Express Gateway'));
+                }
+              });
+          }, 300);
         });
       });
   });

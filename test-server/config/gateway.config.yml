@@ -3,6 +3,7 @@ http:
 apiEndpoints:
   api:
     host: '*'
+    paths: '/api/v1/*'
 serviceEndpoints:
   httpbin:
     url: 'http://localhost:${TEST_BACKEND_PORT:-8081}'
