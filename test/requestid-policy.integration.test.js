@@ -8,6 +8,7 @@ const should = chai.should();
 
 const findOpenPorts = require('../test-server/find-open-port');
 const getBackendServer = require('../test-server/get-backend-server');
+const startGateway = require('../test-server/start-gateway');
 
 let server = undefined;
 let testGw = undefined;
@@ -34,25 +35,8 @@ describe('requestid-policy integration', function () {
         return getBackendServer(ports[1], checkHeader);
       }).then((runningApp) => {
         server = runningApp.app;
-        return new Promise((resolve, reject) => {
-          testGw = child_process.fork('./test-server/server.js');
-          let count = 0;
-          const interval = setInterval(() => {
-            count++; // Waiting for process to start, ignoring conn refused errors
-            request
-              .get('/not-found')
-              .end((err, res) => {
-                if (res && res.statusCode === 404) {
-                  clearInterval(interval);
-                  resolve();
-                } else if (count >= 25) {
-                  clearInterval(interval);
-                  reject(new Error('Failed to start Express Gateway'));
-                }
-              });
-          }, 300);
-        });
-      });
+        return startGateway(process.env.TEST_GW_PORT);
+      }).then((gw) => testGw = gw);
   });
 
   after(function () {
