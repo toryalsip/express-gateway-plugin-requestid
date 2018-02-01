@@ -60,7 +60,7 @@ describe('requestid-policy integration', function () {
     testGw.kill();
   })
 
-  it('should add request id to the request and response', function () {
+  it('should have request id in response from gateway', function () {
     return request
       .get('/api/v1/test')
       .expect(200)
