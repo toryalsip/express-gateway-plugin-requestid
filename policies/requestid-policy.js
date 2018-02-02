@@ -1,5 +1,4 @@
 const DEFAULT_REQUESTID_HEADER_NAME = 'x-gateway-request-id';
-const uuidv4 = require('uuid/v4');
 
 module.exports = {
   name: 'requestid',
@@ -8,13 +7,12 @@ module.exports = {
       console.log('executing requestid policy');
 
       let headerName = actionParams.headerName || DEFAULT_REQUESTID_HEADER_NAME;
+      let requestId = req.egContext.requestID;
 
-      req.headers[headerName] =  uuidv4();
-
-      res.setHeader(headerName, req.headers[headerName]);
+      req.headers[headerName] =  requestId;
+      res.setHeader(headerName, requestId);
 
       console.log(`Header ${headerName} set to ${req.headers[headerName]}`);
-      
       next();
     };
   }

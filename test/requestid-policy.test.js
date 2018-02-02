@@ -7,7 +7,7 @@ describe('requestid-policy', function () {
     runTest();
   });
 
-  it('should add requestid to req and rest with custom name', function () {
+  it('should add requestid to req and res with custom name', function () {
     runTest('x-test-id');
   });
 
@@ -19,7 +19,10 @@ describe('requestid-policy', function () {
     let policy = requestidPolicy.policy(actionParams);
 
     let req = {
-      headers: {}
+      headers: {},
+      egContext: {
+        requestID: 'I-AM-A-REQUEST-ID'
+      }
     };
 
     let res = {
