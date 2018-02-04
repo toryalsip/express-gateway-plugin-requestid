@@ -1,48 +1,89 @@
-// Vslidates that the policy correctly wires up to the express-gateway server and performs
+// Validates that the policy correctly wires up to the express-gateway server and performs
 // the correct actions.
 
-const child_process = require('child_process');
+const path = require('path');
 const supertest = require('supertest');
 const chai = require('chai');
 const should = chai.should();
 
-const findOpenPorts = require('../test-server/find-open-port');
-const getBackendServer = require('../test-server/get-backend-server');
-const startGateway = require('../test-server/start-gateway');
+const getBackendServer = require('./get-backend-server');
+const gateway = require('express-gateway/lib/gateway');
+
+const Config = require('express-gateway/lib/config/config');
+const config = new Config();
+
 
 let server = undefined;
 let testGw = undefined;
 let request = undefined;
 
+process.env.EG_DISABLE_CONFIG_WATCH = 'true';
 
 describe('requestid-policy integration', function () {
   before(function () {
     this.timeout(10000);
-    return findOpenPorts(2)
-      .then((ports) => {
-        process.env.TEST_GW_PORT = ports[0];
-        process.env.TEST_BACKEND_PORT = ports[1];
+    const checkHeader = (req, res) => {
+      if (req.headers['x-gateway-request-id']) {
+        res.status(200).send('OK');
+      } else {
+        res.status(400).send('Invalid');
+      }
+    };
 
-        request = supertest(`http://localhost:${ports[0]}`);
+    return getBackendServer(0, checkHeader)
+      .then((runningApp) => {
+        server = runningApp.app;
 
-        const checkHeader = (req, res) => {
-          if (req.headers['x-gateway-request-id']) {
-            res.status(200).send('OK');
-          } else {
-            res.status(400).send('Invalid');
+        config.gatewayConfig = {
+          http: {
+            port: 0
+          },
+          apiEndpoints: {
+            api: {
+              host: '*',
+              paths: '/api/v1/*'
+            }
+          },
+          serviceEndpoints: {
+            backend: {
+              url: `http://localhost:${runningApp.port}`
+            }
+          },
+          policies: ['proxy', 'requestid'],
+          pipelines: {
+            basic: {
+              apiEndpoints: ['api'],
+              policies: [{
+                requestid: []
+              }, {
+                proxy: [{
+                  action: {
+                    serviceEndpoint: 'backend'
+                  }
+                }]
+              }]
+            }
           }
         };
-        return getBackendServer(ports[1], checkHeader);
-      }).then((runningApp) => {
-        server = runningApp.app;
-        return startGateway(process.env.TEST_GW_PORT);
-      }).then((gw) => testGw = gw);
+
+        return gateway({
+          plugins: {
+            policies: [
+              require('../policies/requestid-policy')
+            ]
+          },
+          config
+        });
+      }).then((gw) => {
+        testGw = gw.app
+        request = supertest(testGw);
+      });
   });
 
   after(function () {
     server.close();
-    testGw.kill();
-  })
+    testGw.close();
+  });
 
   it('should have request id in response from gateway', function () {
     return request
@@ -50,4 +91,4 @@ describe('requestid-policy integration', function () {
       .expect(200)
       .expect((res) => res.headers.should.have.property('x-gateway-request-id'))
   });
-})
+});
