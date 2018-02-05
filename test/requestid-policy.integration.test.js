@@ -8,6 +8,7 @@ const should = chai.should();
 
 const getBackendServer = require('./get-backend-server');
 const gateway = require('express-gateway/lib/gateway');
+const plugins = require('express-gateway/lib/plugins');
 
 const Config = require('express-gateway/lib/config/config');
 const config = new Config();
@@ -66,12 +67,18 @@ describe('requestid-policy integration', function () {
           }
         };
 
-        return gateway({
+        config.systemConfig = {
           plugins: {
-            policies: [
-              require('../policies/requestid-policy')
-            ]
-          },
+            'express-gateway-plugin-requestid': {
+              package: '../manifest.js'
+            }
+          }
+        };
+
+        let loadedPlugins = plugins.load({config});
+
+        return gateway({
+          plugins: loadedPlugins,
           config
         });
       }).then((gw) => {
