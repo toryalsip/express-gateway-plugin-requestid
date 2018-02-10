@@ -1,4 +1,7 @@
-const requestidPolicy = require('../policies/requestid-policy');
+const loggerStub = {
+  debug: () => {}
+}
+const requestidPolicy = require('../policies/requestid-policy')(loggerStub);
 const chai = require('chai');
 const should = chai.should();
 

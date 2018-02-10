@@ -1,19 +1,22 @@
 const DEFAULT_REQUESTID_HEADER_NAME = 'x-gateway-request-id';
 
-module.exports = {
-  name: 'requestid',
-  policy: (actionParams) => {
-    return (req, res, next) => {
-      console.log('executing requestid policy');
 
-      let headerName = actionParams.headerName || DEFAULT_REQUESTID_HEADER_NAME;
-      let requestId = req.egContext.requestID;
+module.exports = (logger) => {
+  return {
+    name: 'requestid',
+    policy: (actionParams) => {
+      return (req, res, next) => {
+        logger.debug('executing requestid policy');
 
-      req.headers[headerName] =  requestId;
-      res.setHeader(headerName, requestId);
+        let headerName = actionParams.headerName || DEFAULT_REQUESTID_HEADER_NAME;
+        let requestId = req.egContext.requestID;
 
-      console.log(`Header ${headerName} set to ${req.headers[headerName]}`);
-      next();
-    };
+        req.headers[headerName] = requestId;
+        res.setHeader(headerName, requestId);
+
+        logger.debug(`Header ${headerName} set to ${req.headers[headerName]}`);
+        next();
+      };
+    }
   }
 };
