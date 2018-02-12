@@ -6,13 +6,8 @@ const supertest = require('supertest');
 const chai = require('chai');
 const should = chai.should();
 
-const getBackendServer = require('./get-backend-server');
-const gateway = require('express-gateway/lib/gateway');
-const plugins = require('express-gateway/lib/plugins');
-
-const Config = require('express-gateway/lib/config/config');
-const config = new Config();
-
+const { getBackendServer, createGateway, createGatewayConfig } = 
+  require('express-gateway-test-tools');
 
 let server = undefined;
 let testGw = undefined;
@@ -35,52 +30,14 @@ describe('requestid-policy integration', function () {
       .then((runningApp) => {
         server = runningApp.app;
 
-        config.gatewayConfig = {
-          http: {
-            port: 0
-          },
-          apiEndpoints: {
-            api: {
-              host: '*',
-              paths: '/api/v1/*'
-            }
-          },
-          serviceEndpoints: {
-            backend: {
-              url: `http://localhost:${runningApp.port}`
-            }
-          },
-          policies: ['proxy', 'requestid'],
-          pipelines: {
-            basic: {
-              apiEndpoints: ['api'],
-              policies: [{
-                requestid: []
-              }, {
-                proxy: [{
-                  action: {
-                    serviceEndpoint: 'backend'
-                  }
-                }]
-              }]
-            }
-          }
-        };
+        let gwConfig = createGatewayConfig();
+        gwConfig.serviceEndpoints.backend.url = `http://localhost:${runningApp.port}`;
 
-        config.systemConfig = {
-          plugins: {
-            'express-gateway-plugin-requestid': {
-              package: '../manifest.js'
-            }
-          }
-        };
+        const policiesToTest = [{
+          'requestid': []
+        }];
 
-        let loadedPlugins = plugins.load({config});
-
-        return gateway({
-          plugins: loadedPlugins,
-          config
-        });
+        return createGateway(gwConfig, '../manifest.js', policiesToTest);
       }).then((gw) => {
         testGw = gw.app
         request = supertest(testGw);
@@ -94,7 +51,7 @@ describe('requestid-policy integration', function () {
 
   it('should have request id in response from gateway', function () {
     return request
-      .get('/api/v1/test')
+      .get('/ip')
       .expect(200)
       .expect((res) => res.headers.should.have.property('x-gateway-request-id'))
   });
